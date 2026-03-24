@@ -12,18 +12,13 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    
     <style>
         :root {
-            --primary: #0f172a; 
-            --primary-hover: #334155; 
-            --bg: #f1f5f9;
-            --card-bg: #ffffff; 
-            --text-main: #1e293b; 
-            --text-sub: #64748b;
-            --border: #e2e8f0; 
-            --danger: #ef4444; 
-            --success: #10b981; 
-            --accent: #3b82f6;
+            --primary: #0f172a; --primary-hover: #334155; --bg: #f1f5f9;
+            --card-bg: #ffffff; --text-main: #1e293b; --text-sub: #64748b;
+            --border: #e2e8f0; --danger: #ef4444; --success: #10b981; --accent: #3b82f6;
         }
         body.modo-escuro {
             --bg: #020617; --card-bg: #0f172a; --text-main: #f8fafc;
@@ -31,7 +26,7 @@
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 20px; transition: all 0.3s ease; -webkit-tap-highlight-color: transparent; }
         .container { background-color: var(--card-bg); padding: 40px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); width: 100%; max-width: 1000px; margin: 0 auto; }
-        .escondido { display: none; }
+        .escondido { display: none !important; }
         h1, h2, h3 { font-weight: 700; letter-spacing: -0.025em; margin-bottom: 20px; }
         input, select { width: 100%; padding: 12px 16px; margin-top: 8px; border: 1px solid var(--border); border-radius: 10px; background-color: var(--card-bg); color: var(--text-main); font-size: 14px; outline: none; transition: 0.2s; min-height: 44px; }
         button { font-weight: 600; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; transition: all 0.2s; margin-top: 10px; min-height: 44px; }
@@ -49,15 +44,60 @@
         .system-logo { max-width: 80px; margin-bottom: 10px; border-radius: 12px; }
         .floating-theme { position: fixed; top: 25px; right: 25px; width: 44px; height: 44px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; z-index: 100; }
         .color-preview { width: 100%; height: 40px; border-radius: 8px; border: 1px solid var(--border); margin-top: 5px; cursor: pointer; padding: 0; }
-        .progress-bar { height: 4px; background: var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 25px; }
-        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: 0.6s; }
-        .local-badge { background: var(--bg); color: var(--text-sub); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid var(--border); }
         .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
         .bg-vencido { background: #fee2e2; color: #991b1b; }
         .bg-proximo { background: #fef3c7; color: #92400e; }
+
+        /* --- ESTILOS DE IMPRESSÃO (PDF E ETIQUETA A4) --- */
+        #print-area { display: none; }
+        @media print {
+            body { background: white; margin: 0; padding: 0; color: black; }
+            .container, .floating-theme { display: none !important; }
+            #print-area { display: block !important; width: 100%; }
+            
+            /* Formato de Folha A4 */
+            @page { size: A4; margin: 15mm; }
+            
+            /* Tabela Relatório PDF */
+            .relatorio-print { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; }
+            .relatorio-print th, .relatorio-print td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .relatorio-print th { background-color: #f4f4f4; font-weight: bold; }
+            
+            /* Grid Etiquetas A4 (Padrão 3 colunas) */
+            .folha-a4 {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 5mm;
+                width: 100%;
+            }
+
+            .etiqueta-print {
+                border: 1px dashed #ccc; 
+                padding: 10px 5px;
+                text-align: center;
+                font-family: Arial, sans-serif;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                box-sizing: border-box;
+                page-break-inside: avoid;
+                height: 38mm; 
+            }
+            .etiqueta-print h3 { margin: 0 0 5px 0; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+            .etiqueta-print p { margin: 0 0 5px 0; font-size: 10px; font-weight: bold; }
+            .etiqueta-print svg { max-width: 100%; height: auto; }
+        }
+        
+        @media (max-width: 768px) {
+            .botoes-topo-config { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
+            .botoes-topo-config button { margin-left: 0 !important; }
+        }
     </style>
 </head>
 <body>
+
+<div id="print-area"></div>
 
 <button class="floating-theme" onclick="document.body.classList.toggle('modo-escuro')">🌓</button>
 
@@ -67,12 +107,12 @@
             <img src="" id="logo-login" class="system-logo escondido">
             <div id="emoji-login" style="font-size: 40px; margin-bottom: 10px;">📦</div>
             <h1 style="margin: 0;" class="display-nome-sistema">Estoque Pro</h1>
-            <p style="color: var(--text-sub); font-size: 14px;">Painel Administrativo</p>
+            <p style="color: var(--text-sub); font-size: 14px;">Painel Administrativo Principal</p>
         </div>
         <div class="card" style="max-width: 400px; margin: 0 auto; border: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
             <input type="text" id="login-usuario" placeholder="Admin">
             <input type="password" id="login-senha" placeholder="Senha">
-            <button class="btn-p" style="width: 100%;" onclick="autenticar()">Entrar</button>
+            <button class="btn-p" style="width: 100%;" onclick="autenticar()">Entrar no Painel</button>
         </div>
     </div>
 
@@ -117,7 +157,11 @@
                 <div class="card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <h3 style="margin:0">Setor Ativo</h3>
-                        <button class="btn-danger" style="margin:0; padding: 6px 12px; font-size: 11px;" onclick="zerarEstoqueSetor()">🗑️ Zerar Contagem</button>
+                        <div class="botoes-topo-config">
+                            <button class="btn-s" style="margin:0; padding: 6px 10px; font-size: 11px;" onclick="imprimirRelatorioEstoque()">🖨️ PDF Estoque</button>
+                            <button class="btn-s" style="margin:0; padding: 6px 10px; font-size: 11px; margin-left:5px" onclick="imprimirTodasEtiquetas()">🏷️ Todas Etiquetas</button>
+                            <button class="btn-danger" style="margin:0; padding: 6px 10px; font-size: 11px; margin-left:5px" onclick="zerarEstoqueSetor()">🗑️ Zerar</button>
+                        </div>
                     </div>
                     <select class="select-depositos-global" id="ver-local-itens" onchange="atualizarTabelaAdmin()"></select>
                     <div style="max-height: 400px; overflow-y: auto; margin-top:15px">
@@ -150,7 +194,10 @@
         <div id="aba-alertas" class="escondido">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h3 style="margin:0">Monitor de Validades</h3>
-                <button class="btn-danger" style="margin:0; padding: 8px 15px; font-size: 12px;" onclick="limparAlertasCriticos()">🧹 Limpar Itens Vencidos</button>
+                <div>
+                    <button class="btn-s" style="margin:0; padding: 8px 15px; font-size: 12px;" onclick="imprimirRelatorioValidades()">🖨️ Imprimir Alertas</button>
+                    <button class="btn-danger" style="margin:0; padding: 8px 15px; font-size: 12px; margin-left:5px" onclick="limparAlertasCriticos()">🧹 Limpar Itens</button>
+                </div>
             </div>
             <table><thead><tr><th>Produto</th><th>Setor</th><th>Vencimento</th><th>Status</th></tr></thead><tbody id="lista-alertas-corpo"></tbody></table>
         </div>
@@ -184,19 +231,18 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
 <script>
-    // --- 1. REDIRECIONAMENTO INTELIGENTE (ADICIONADO) ---
+    // --- REDIRECIONAMENTO INTELIGENTE ---
     (function detectarDispositivo() {
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('admin') === 'true') return; // Se usar ?admin=true não redireciona
+        if (urlParams.get('admin') === 'true') return; 
 
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-        // Detecta se é celular (Android/iPhone/iPad)
         if (/android/i.test(userAgent) || (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream)) {
             window.location.href = 'coletor.html';
         }
     })();
 
-    // --- 2. CONFIGURAÇÃO FIREBASE ---
+    // --- CONFIGURAÇÃO FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyBVjkIBX8ZVQASMdyUXH4TKGnREpi-Etwo",
         authDomain: "estoque-boca-do-acre.firebaseapp.com",
@@ -211,7 +257,7 @@
 
     let usuarios = {}, depositos = {}, produtosAdmin = [];
 
-    // --- LISTENERS E FUNÇÕES ADMIN ---
+    // --- LISTENERS ---
     db.ref('configuracoes').on('value', snap => {
         const cfg = snap.val() || { nome: "Estoque Pro", primary: "#0f172a", bg: "#f1f5f9" };
         document.querySelectorAll('.display-nome-sistema').forEach(el => el.innerText = cfg.nome);
@@ -231,14 +277,10 @@
     function autenticar() {
         const u = document.getElementById('login-usuario').value.trim();
         const s = document.getElementById('login-senha').value;
-        if(u.toLowerCase()==='admin' && s==='1234') {
-            mostrarTela('tela-admin');
-        } else {
-            alert("Acesso exclusivo para administradores neste painel.");
-        }
+        if(u.toLowerCase()==='admin' && s==='1234') { mostrarTela('tela-admin'); } 
+        else { alert("Acesso exclusivo para administradores neste painel."); }
     }
 
-    // --- FUNÇÕES DE INTERFACE ---
     function mudarAba(t) { 
         ['config', 'depositos', 'alertas', 'usuarios', 'hist', 'sistema'].forEach(a => document.getElementById('aba-'+a).classList.add('escondido'));
         document.getElementById('aba-'+t).classList.remove('escondido');
@@ -247,11 +289,7 @@
         if(t === 'alertas') renderizarAlertas();
     }
 
-    function mostrarTela(id) { 
-        document.querySelectorAll('[id^="tela-"]').forEach(t => t.classList.add('escondido')); 
-        document.getElementById(id).classList.remove('escondido'); 
-    }
-
+    function mostrarTela(id) { document.querySelectorAll('[id^="tela-"]').forEach(t => t.classList.add('escondido')); document.getElementById(id).classList.remove('escondido'); }
     function sair() { mostrarTela('tela-login'); }
 
     // --- GESTÃO DE DADOS ---
@@ -265,7 +303,15 @@
         const l = document.getElementById('ver-local-itens').value; if(!l) return;
         db.ref('setores/' + l).once('value', snap => {
             produtosAdmin = snap.val() || [];
-            document.getElementById('lista-admin-corpo').innerHTML = produtosAdmin.map((p, i) => `<tr><td><strong>${p.nome}</strong><br><small>${p.codigo}</small></td><td style="text-align:right"><button class="btn-excluir" style="color:var(--accent)" onclick="editarItemAdm(${i})">✏️</button><button class="btn-excluir" onclick="excluirItemAdm(${i})">✕</button></td></tr>`).join('');
+            document.getElementById('lista-admin-corpo').innerHTML = produtosAdmin.map((p, i) => `
+                <tr>
+                    <td><strong>${p.nome}</strong><br><small>${p.codigo}</small></td>
+                    <td style="text-align:right">
+                        <button class="btn-s" style="color:var(--text-main); font-size:16px; padding:6px; margin-right:5px;" onclick="imprimirEtiqueta(${i})" title="Imprimir Etiqueta deste item">🏷️</button>
+                        <button class="btn-excluir" style="color:var(--accent)" onclick="editarItemAdm(${i})">✏️</button>
+                        <button class="btn-excluir" onclick="excluirItemAdm(${i})">✕</button>
+                    </td>
+                </tr>`).join('');
         });
     }
 
@@ -295,13 +341,160 @@
         }
     }
 
+    // --- FUNÇÕES DE IMPRESSÃO ---
+    function imprimirRelatorioEstoque() {
+        const l = document.getElementById('ver-local-itens').value;
+        if(!l || produtosAdmin.length === 0) return alert("Não há itens para imprimir neste setor.");
+        
+        let html = `
+            <div style="text-align:center; margin-bottom:20px;">
+                <h2>Relatório de Inventário - ${l}</h2>
+                <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+            </div>
+            <table class="relatorio-print">
+                <thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>BOM</th><th>AVARIA</th><th>VALIDADE</th></tr></thead>
+                <tbody>
+        `;
+        
+        produtosAdmin.forEach(p => {
+            let val = p.validade ? new Date(p.validade+'T00:00:00').toLocaleDateString('pt-BR') : '-';
+            html += `<tr><td>${p.codigo || 'S/C'}</td><td>${p.nome}</td><td>${p.quantidade || 0}</td><td>${p.avarias || 0}</td><td>${val}</td></tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        document.getElementById('print-area').innerHTML = html;
+        window.print();
+    }
+
+    function imprimirRelatorioValidades() {
+        db.ref('setores').once('value', snap => {
+            const setores = snap.val() || {};
+            const hoje = new Date();
+            const limite = new Date(); limite.setDate(hoje.getDate() + 30);
+            
+            let html = `
+                <div style="text-align:center; margin-bottom:20px;">
+                    <h2>Relatório de Validades Críticas</h2>
+                    <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+                </div>
+                <table class="relatorio-print">
+                    <thead><tr><th>PRODUTO</th><th>SETOR</th><th>VENCIMENTO</th><th>STATUS</th></tr></thead>
+                    <tbody>
+            `;
+            
+            let temItem = false;
+            Object.keys(setores).forEach(s => {
+                if(Array.isArray(setores[s])) setores[s].forEach(p => {
+                    if(p.validade && (parseFloat(p.quantidade) > 0 || parseFloat(p.avarias) > 0)) {
+                        const dv = new Date(p.validade + 'T00:00:00');
+                        let status = dv < hoje ? 'VENCIDO' : (dv <= limite ? 'PRÓXIMO' : '');
+                        if(status) {
+                            temItem = true;
+                            html += `<tr><td>${p.nome}</td><td>${s}</td><td>${dv.toLocaleDateString('pt-BR')}</td><td><strong>${status}</strong></td></tr>`;
+                        }
+                    }
+                });
+            });
+            html += `</tbody></table>`;
+            
+            if(!temItem) return alert("Parabéns! Nenhum item em estado crítico no estoque.");
+            
+            document.getElementById('print-area').innerHTML = html;
+            window.print();
+        });
+    }
+
+    function imprimirEtiqueta(index) {
+        const p = produtosAdmin[index];
+        if(!p) return;
+
+        let qtdStr = prompt("Quantas cópias desta etiqueta deseja gerar?\n(Recomendado: 30 para folha A4 inteira)", "30");
+        let qtd = parseInt(qtdStr);
+        if(isNaN(qtd) || qtd <= 0) return;
+        
+        const validadeStr = p.validade ? new Date(p.validade+'T00:00:00').toLocaleDateString('pt-BR') : 'Sem val.';
+        const codigoReal = (p.codigo && p.codigo !== "AVULSO" && p.codigo !== "MANUAL" && p.codigo.length >= 3) ? p.codigo : "000000000000";
+
+        let html = '<div class="folha-a4">';
+        for(let i=0; i<qtd; i++) {
+            html += `
+                <div class="etiqueta-print">
+                    <h3>${p.nome.substring(0, 30)}</h3>
+                    <p>Val: ${validadeStr}</p>
+                    <svg class="barcode-print"></svg>
+                </div>
+            `;
+        }
+        html += '</div>';
+        document.getElementById('print-area').innerHTML = html;
+        
+        try {
+            JsBarcode(".barcode-print", codigoReal, {
+                format: "CODE128", width: 1.5, height: 35, displayValue: true, fontSize: 12, margin: 0
+            });
+        } catch(e) { console.log("Erro ao gerar código de barras.", e); }
+        
+        setTimeout(() => { window.print(); }, 400);
+    }
+
+    // --- IMPRIMIR TODAS AS ETIQUETAS DO SETOR ---
+    function imprimirTodasEtiquetas() {
+        if(!produtosAdmin || produtosAdmin.length === 0) {
+            return alert("Não há produtos cadastrados neste setor.");
+        }
+
+        let qtdStr = prompt("Quantas etiquetas de CADA produto você quer imprimir?\n(Ex: Digite 1 para fazer um catálogo de tudo)", "1");
+        let qtd = parseInt(qtdStr);
+        if(isNaN(qtd) || qtd <= 0) return;
+
+        let html = '<div class="folha-a4">';
+        let dadosCodigos = [];
+
+        produtosAdmin.forEach((p, index) => {
+            const validadeStr = p.validade ? new Date(p.validade+'T00:00:00').toLocaleDateString('pt-BR') : 'Sem val.';
+            const codigoReal = (p.codigo && p.codigo !== "AVULSO" && p.codigo !== "MANUAL" && p.codigo.length >= 3) ? p.codigo : "000000000000";
+
+            for(let i=0; i<qtd; i++) {
+                // Cria um ID único para cada código de barras para poder renderizar depois
+                let uniqueId = `barcode-all-${index}-${i}`;
+                html += `
+                    <div class="etiqueta-print">
+                        <h3>${p.nome.substring(0, 30)}</h3>
+                        <p>Val: ${validadeStr}</p>
+                        <svg id="${uniqueId}"></svg>
+                    </div>
+                `;
+                dadosCodigos.push({ id: uniqueId, codigo: codigoReal });
+            }
+        });
+        
+        html += '</div>';
+        document.getElementById('print-area').innerHTML = html;
+
+        // Renderiza cada código de barras individualmente
+        try {
+            dadosCodigos.forEach(item => {
+                JsBarcode("#" + item.id, item.codigo, {
+                    format: "CODE128", 
+                    width: 1.5,
+                    height: 35,
+                    displayValue: true,
+                    fontSize: 12,
+                    margin: 0
+                });
+            });
+        } catch(e) { console.log("Erro ao gerar códigos de barras.", e); }
+        
+        // Timeout maior (800ms) para dar tempo de renderizar centenas de códigos de barras antes de abrir a janela de impressão
+        setTimeout(() => { window.print(); }, 800);
+    }
+
+    // --- OUTRAS FUNÇÕES INTACTAS ---
     async function limparAlertasCriticos() {
         if(!confirm("Limpar Qtd/Validade de todos os itens vencidos?")) return;
         const snap = await db.ref('setores').once('value');
         const todos = snap.val() || {};
-        const hoje = new Date();
-        const limite = new Date(); limite.setDate(hoje.getDate() + 30);
-
+        const hoje = new Date(); const limite = new Date(); limite.setDate(hoje.getDate() + 30);
         for (let s in todos) {
             if (Array.isArray(todos[s])) {
                 let mod = false;
@@ -317,11 +510,23 @@
         alert("Limpeza concluída!"); renderizarAlertas();
     }
 
+    function importarCSV() {
+        const l = document.getElementById('ver-local-itens').value; const f = document.getElementById('input-csv').files[0];
+        if(!l || !f) return alert("Selecione o setor e o arquivo CSV!");
+        const r = new FileReader(); r.onload = async (e) => {
+            const linhas = e.target.result.split(/\r?\n/); let novos = [];
+            linhas.forEach(lin => { 
+                const c = lin.split(/[;,]/); 
+                if(c.length >= 2 && c[0].toLowerCase() !== "codigo") novos.push({ codigo: c[0].replace(/"/g,'').trim(), nome: c[1].replace(/"/g,'').trim(), quantidade: 0, avarias: 0, validade: "", obs: "" });
+            });
+            await db.ref('setores/' + l).set(novos); alert("Itens importados com sucesso!"); atualizarTabelaAdmin();
+        }; r.readAsText(f, 'UTF-8');
+    }
+
     function exportarConsolidado() {
         const local = document.getElementById('filtro-local-relatorio').value;
         db.ref('setores/' + local).once('value', snap => {
-            const itens = snap.val() || [];
-            let csv = "Codigo;Produto;Bom;Avaria;Validade;Observacao\n";
+            const itens = snap.val() || []; let csv = "Codigo;Produto;Bom;Avaria;Validade;Observacao\n";
             itens.forEach(p => { if(p.quantidade>0||p.avarias>0||p.validade) csv += `${p.codigo};${p.nome};${p.quantidade};${p.avarias};${p.validade};${p.obs||''}\n`; });
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `Relatorio_${local}.csv`; link.click();
@@ -329,8 +534,7 @@
     }
 
     function renderizarLogs(dados) {
-        if(!dados) return;
-        document.getElementById('lista-historico').innerHTML = Object.keys(dados).reverse().map(k => `
+        if(!dados) return; document.getElementById('lista-historico').innerHTML = Object.keys(dados).reverse().map(k => `
             <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding:12px; margin-bottom:10px">
                 <span style="font-size:12px"><strong>${dados[k].local}</strong><br>${dados[k].data} - ${dados[k].operador}</span>
                 <button class="btn-s" style="margin:0; font-size:11px" onclick="baixarLog('${k}')">CSV</button>
@@ -339,9 +543,8 @@
 
     function baixarLog(key) {
         db.ref('historico/' + key).once('value', snap => {
-            const d = snap.val();
-            let csv = "Produto;Qtd;Avaria;Validade;Obs\n";
-            d.itens.forEach(p => csv += `${p.codigo};${p.nome};${p.quantidade};${p.avarias};${p.validade};${p.obs||''}\n`);
+            const d = snap.val(); let csv = "Produto;Bom;Avaria;Validade;Obs\n";
+            d.itens.forEach(p => csv += `${p.nome};${p.quantidade};${p.avarias};${p.validade};${p.obs||''}\n`);
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `Log_${d.local}.csv`; link.click();
         });
@@ -358,7 +561,7 @@
             const setores = snap.val() || {};
             Object.keys(setores).forEach(s => {
                 if(Array.isArray(setores[s])) setores[s].forEach(p => {
-                    if(p.validade && (p.quantidade > 0 || p.avarias > 0)) {
+                    if(p.validade && (parseFloat(p.quantidade) > 0 || parseFloat(p.avarias) > 0)) {
                         const dv = new Date(p.validade + 'T00:00:00');
                         let b = dv < new Date() ? '<span class="status-badge bg-vencido">VENCIDO</span>' : (dv <= new Date().setDate(new Date().getDate()+30) ? '<span class="status-badge bg-proximo">PRÓXIMO</span>' : '');
                         if(b) corpo.innerHTML += `<tr><td>${p.nome}</td><td><span class="local-badge">${s}</span></td><td>${dv.toLocaleDateString('pt-BR')}</td><td>${b}</td></tr>`;
