@@ -148,7 +148,10 @@
         </div>
 
         <div id="aba-alertas" class="escondido">
-            <h3>Monitor de Validades</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin:0">Monitor de Validades</h3>
+                <button class="btn-danger" style="margin:0; padding: 8px 15px; font-size: 12px;" onclick="limparAlertasCriticos()">🧹 Limpar Itens Vencidos</button>
+            </div>
             <table><thead><tr><th>Produto</th><th>Setor</th><th>Vencimento</th><th>Status</th></tr></thead><tbody id="lista-alertas-corpo"></tbody></table>
         </div>
 
@@ -200,11 +203,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
 <script>
-    // --- REGISTRO DO SERVICE WORKER PARA PWA ---
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
-    }
-
     // --- CONFIGURAÇÃO FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyBVjkIBX8ZVQASMdyUXH4TKGnREpi-Etwo",
@@ -238,13 +236,12 @@
     db.ref('depositos').on('value', snap => { depositos = snap.val() || {}; atualizarDropdownsDepositos(); renderizarDepositos(); });
     db.ref('historico').on('value', snap => { renderizarLogs(snap.val()); });
 
-    // --- CORREÇÃO: SALVAR E SINCRONIZAR ---
+    // --- SINCRONIZAR ---
     async function salvarContagem() {
         if(!localAtual) return;
         try {
             await db.ref('setores/' + localAtual).set(produtosNoSetor);
             const itensContados = produtosNoSetor.filter(p => (parseFloat(p.quantidade) > 0 || parseFloat(p.avarias) > 0 || p.validade));
-            
             if(itensContados.length > 0) {
                 const log = { data: new Date().toLocaleString('pt-BR'), operador: opAtual, local: localAtual, itens: itensContados };
                 await db.ref('historico').push(log);
@@ -253,7 +250,7 @@
         } catch (e) { alert("Erro na sincronização."); }
     }
 
-    // --- CORREÇÃO: EXPORTAÇÃO CSV ---
+    // --- EXPORTAÇÃO ---
     function downloadCSV(csv, filename) {
         const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
@@ -268,23 +265,12 @@
         db.ref('setores/' + local).once('value', snap => {
             const itens = snap.val();
             if(!itens) return;
-            let csv = "Codigo;Produto;Bom;Avaria;Validade;Local\n";
+            let csv = "Codigo;Produto;Bom;Avaria;Validade;Observacao;Local\n";
             itens.forEach(p => {
-                if(parseFloat(p.quantidade) > 0 || parseFloat(p.avarias) > 0)
-                    csv += `${p.codigo || ''};${p.nome};${p.quantidade || 0};${p.avarias || 0};${p.validade || ''};${local}\n`;
+                if(parseFloat(p.quantidade) > 0 || parseFloat(p.avarias) > 0 || p.validade)
+                    csv += `${p.codigo || ''};${p.nome};${p.quantidade || 0};${p.avarias || 0};${p.validade || ''};${p.obs || ''};${local}\n`;
             });
             downloadCSV(csv, `Inventario_${local}.csv`);
-        });
-    }
-
-    window.baixarLogIndividual = function(key) {
-        db.ref('historico/' + key).once('value', snap => {
-            const d = snap.val();
-            let csv = "Data;Operador;Local;Codigo;Produto;Bom;Avaria;Validade\n";
-            d.itens.forEach(p => {
-                csv += `${d.data};${d.operador};${d.local};${p.codigo || ''};${p.nome};${p.quantidade || 0};${p.avarias || 0};${p.validade || ''}\n`;
-            });
-            downloadCSV(csv, `Log_${d.local}.csv`);
         });
     }
 
@@ -301,12 +287,43 @@
         document.getElementById('lista-contagem').innerHTML = produtosNoSetor.map((p, i) => `
             <tr class="linha-contagem">
                 <td><strong>${p.nome}</strong><br><small>${p.codigo}</small></td>
-                <td><input type="number" value="${p.quantidade||''}" oninput="atuS(${i},'quantidade',this.value)" placeholder="0"></td>
-                <td><input type="number" value="${p.avarias||''}" oninput="atuS(${i},'avarias',this.value)" placeholder="Avaria" style="border-color:var(--danger)"></td>
+                <td><input type="number" value="${p.quantidade||''}" oninput="atuS(${i},'quantidade',this.value)" placeholder="Qtd"></td>
+                <td><input type="number" value="${p.avarias||''}" oninput="atuS(${i},'avarias',this.value)" placeholder="Ava" style="border-color:var(--danger)"></td>
                 <td><input type="date" value="${p.validade||''}" oninput="atuS(${i},'validade',this.value); checkDataInput(this, this.value)" id="val-${i}"></td>
-                <td><button class="btn-excluir" onclick="removerItemManual(${i})">✕</button></td>
+                <td><input type="text" value="${p.obs||''}" oninput="atuS(${i},'obs',this.value)" placeholder="Obs..." style="font-size:11px"></td>
             </tr>`).join('');
         atuProgresso();
+    }
+
+    // --- LIMPEZA DE VALIDADES (ADM) ---
+    async function limparAlertasCriticos() {
+        if(!confirm("Isso irá zerar Qtd e Validade de TODOS os itens vencidos ou próximos do vencimento em todos os depósitos. Deseja continuar?")) return;
+        try {
+            const snap = await db.ref('setores').once('value');
+            const todosSetores = snap.val() || {};
+            const hoje = new Date();
+            const limiteProximo = new Date();
+            limiteProximo.setDate(hoje.getDate() + 30);
+
+            for (let setor in todosSetores) {
+                if (Array.isArray(todosSetores[setor])) {
+                    let alterou = false;
+                    const novosDados = todosSetores[setor].map(p => {
+                        if (p.validade) {
+                            const dv = new Date(p.validade + 'T00:00:00');
+                            if (dv <= limiteProximo) {
+                                alterou = true;
+                                return { ...p, quantidade: 0, avarias: 0, validade: "", obs: "" };
+                            }
+                        }
+                        return p;
+                    });
+                    if (alterou) await db.ref('setores/' + setor).set(novosDados);
+                }
+            }
+            alert("✅ Alertas limpos!");
+            renderizarAlertas();
+        } catch (e) { alert("Erro ao limpar dados."); }
     }
 
     // --- AUXILIARES ---
@@ -321,8 +338,7 @@
     function sair() { mostrarTela('tela-login'); }
     function atuS(i, c, v) { produtosNoSetor[i][c] = v; atuProgresso(); }
     function atuProgresso() { const c = produtosNoSetor.filter(p => (parseFloat(p.quantidade) > 0 || parseFloat(p.avarias) > 0)).length; document.getElementById('barra-progresso-fill').style.width = (produtosNoSetor.length > 0 ? (c / produtosNoSetor.length * 100) : 0) + '%'; }
-    function adicionarItemManual() { const n = document.getElementById('add-manual-nome').value.trim(); if(n) { produtosNoSetor.push({ codigo: "MANUAL", nome: n.toUpperCase(), quantidade: 0, avarias: 0, validade: "" }); renderContagem(); document.getElementById('add-manual-nome').value = ""; } }
-    function removerItemManual(i) { if(confirm("Remover?")) { produtosNoSetor.splice(i, 1); renderContagem(); } }
+    function adicionarItemManual() { const n = document.getElementById('add-manual-nome').value.trim(); if(n) { produtosNoSetor.push({ codigo: "MANUAL", nome: n.toUpperCase(), quantidade: 0, avarias: 0, validade: "", obs: "" }); renderContagem(); document.getElementById('add-manual-nome').value = ""; } }
     function pesquisarProduto() { const b = document.getElementById('busca-contagem').value.toLowerCase(); document.querySelectorAll('.linha-contagem').forEach(r => r.style.display = r.innerText.toLowerCase().includes(b) ? '' : 'none'); }
     function checkDataInput(i, d) { if(!d) return i.style.background = ""; const dv = new Date(d + 'T00:00:00'); i.style.background = dv < new Date() ? "#fee2e2" : (dv <= new Date().setDate(new Date().getDate()+30) ? "#fef3c7" : ""); }
     function cadastrarDeposito() { const n = document.getElementById('novo-deposito-nome').value.trim(); if(n) db.ref('depositos').push({ nome: n }).then(() => document.getElementById('novo-deposito-nome').value = ""); }
@@ -342,7 +358,7 @@
     function adicionarItemAdm() {
         const l = document.getElementById('ver-local-itens').value, n = document.getElementById('adm-novo-nome').value.trim(), c = document.getElementById('adm-novo-cod').value.trim();
         if(l && n) db.ref('setores/' + l).once('value', snap => {
-            let list = snap.val() || []; list.push({ codigo: c || "AVULSO", nome: n.toUpperCase(), quantidade: 0, avarias: 0, validade: "" });
+            let list = snap.val() || []; list.push({ codigo: c || "AVULSO", nome: n.toUpperCase(), quantidade: 0, avarias: 0, validade: "", obs: "" });
             db.ref('setores/' + l).set(list).then(() => { document.getElementById('adm-novo-nome').value = ""; document.getElementById('adm-novo-cod').value = ""; atualizarTabelaAdmin(); });
         });
     }
@@ -356,7 +372,7 @@
         const l = document.getElementById('ver-local-itens').value;
         if(l && confirm("Zerar tudo?")) {
             db.ref('setores/' + l).once('value', snap => {
-                const z = (snap.val() || []).map(p => ({ ...p, quantidade: 0, avarias: 0, validade: "" }));
+                const z = (snap.val() || []).map(p => ({ ...p, quantidade: 0, avarias: 0, validade: "", obs: "" }));
                 db.ref('setores/' + l).set(z).then(() => atualizarTabelaAdmin());
             });
         }
@@ -370,7 +386,7 @@
         if(!l || !f) return;
         const r = new FileReader(); r.onload = async (e) => {
             const linhas = e.target.result.split(/\r?\n/); let novos = [];
-            linhas.forEach(lin => { const c = lin.split(/[;,]/); if(c.length >= 2 && c[0].toLowerCase() !== "codigo") novos.push({ codigo: c[0].replace(/"/g,'').trim(), nome: c[1].replace(/"/g,'').trim(), quantidade: 0, avarias: 0, validade: "" }); });
+            linhas.forEach(lin => { const c = lin.split(/[;,]/); if(c.length >= 2 && c[0].toLowerCase() !== "codigo") novos.push({ codigo: c[0].replace(/"/g,'').trim(), nome: c[1].replace(/"/g,'').trim(), quantidade: 0, avarias: 0, validade: "", obs: "" }); });
             await db.ref('setores/' + l).set(novos); atualizarTabelaAdmin();
         }; r.readAsText(f, 'UTF-8');
     }
@@ -379,8 +395,18 @@
         document.getElementById('lista-historico').innerHTML = Object.keys(dados).reverse().map(k => `
             <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding:12px; margin-bottom:10px">
                 <span style="font-size:12px"><strong>${dados[k].local}</strong><br>${dados[k].data} - ${dados[k].operador}</span>
-                <button class="btn-s" style="margin:0; font-size:11px" onclick="baixarLogIndividual('${k}')">CSV</button>
+                <button class="btn-s" style="margin:0; font-size:11px" onclick="window.baixarLogIndividual('${k}')">CSV</button>
             </div>`).join('');
+    }
+    window.baixarLogIndividual = function(key) {
+        db.ref('historico/' + key).once('value', snap => {
+            const d = snap.val();
+            let csv = "Data;Operador;Local;Codigo;Produto;Bom;Avaria;Validade;Obs\n";
+            d.itens.forEach(p => {
+                csv += `${d.data};${d.operador};${d.local};${p.codigo || ''};${p.nome};${p.quantidade || 0};${p.avarias || 0};${p.validade || ''};${p.obs || ''}\n`;
+            });
+            downloadCSV(csv, `Log_${d.local}.csv`);
+        });
     }
     function salvarUsuario() { const n = document.getElementById('novo-user-nome').value, s = document.getElementById('novo-user-senha').value, l = document.getElementById('novo-user-local-select').value; if(n && s && l) db.ref('usuarios').push({ nome: n, senha: s, local: l }); }
     function renderizarUsuarios() { document.getElementById('lista-usuarios-corpo').innerHTML = Object.keys(usuarios).map(k => `<tr><td>${usuarios[k].nome}</td><td>${usuarios[k].local}</td><td style="text-align:right"><button class="btn-excluir" onclick="db.ref('usuarios/${k}').remove()">✕</button></td></tr>`).join(''); }
