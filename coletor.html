@@ -3,164 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Coletor Mobile | Estoque</title>
+    <title id="page-title">Coletor de Estoque</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" id="status-bar-color" content="#0f172a">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --primary: #0f172a;
-            --accent: #3b82f6;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #1e293b;
-            --danger: #ef4444;
-            --border: #e2e8f0;
+            --primary: #0f172a; --primary-hover: #334155; --bg: #f1f5f9;
+            --card-bg: #ffffff; --text-main: #1e293b; --text-sub: #64748b;
+            --border: #e2e8f0; --danger: #ef4444; --success: #10b981; --accent: #3b82f6;
         }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body.modo-escuro {
+            --bg: #020617; --card-bg: #0f172a; --text-main: #f8fafc;
+            --text-sub: #94a3b8; --border: #1e293b;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 10px; transition: all 0.3s ease; -webkit-tap-highlight-color: transparent; }
         
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg); 
-            color: var(--text); 
-            margin: 0; 
-            padding-bottom: 80px; /* Espaço para o botão fixo */
-        }
-
-        /* Header fixo */
-        .header {
-            background: var(--primary);
-            color: white;
-            padding: 15px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header h1 { margin: 0; font-size: 18px; }
-        .header p { margin: 2px 0 0; font-size: 12px; opacity: 0.8; }
-
-        .container { padding: 15px; }
-
-        /* Busca fixa abaixo do header */
-        .search-box {
-            position: sticky;
-            top: 65px;
-            z-index: 90;
-            background: var(--bg);
-            padding: 10px 0;
-        }
-
-        input {
-            width: 100%;
-            padding: 14px;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            font-size: 16px; /* Evita zoom no iPhone */
-            outline: none;
-            transition: border 0.3s;
-        }
-
+        /* Layout Mobile First */
+        .container { background-color: var(--card-bg); padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 100%; max-width: 600px; margin: 0 auto; box-sizing: border-box; min-height: 95vh; display: flex; flex-direction: column; }
+        
+        .escondido { display: none !important; }
+        h1, h2, h3 { font-weight: 700; letter-spacing: -0.025em; margin-bottom: 15px; }
+        
+        input, select { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid var(--border); border-radius: 10px; background-color: var(--card-bg); color: var(--text-main); font-size: 16px; outline: none; transition: 0.2s; min-height: 48px; box-sizing: border-box; }
         input:focus { border-color: var(--accent); }
 
-        /* Card de Produto */
-        .item-card {
-            background: var(--card);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            border: 1px solid var(--border);
-        }
+        button { font-weight: 600; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-size: 15px; transition: all 0.2s; margin-top: 10px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+        .btn-p { background-color: var(--primary); color: white; width: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .btn-s { background-color: transparent; color: var(--text-sub); border: 1px solid var(--border); }
+        
+        .card { border: 1px solid var(--border); padding: 15px; border-radius: 16px; margin-bottom: 15px; background: var(--card-bg); }
+        
+        .system-logo { max-width: 80px; margin-bottom: 10px; border-radius: 12px; }
+        .floating-theme { position: fixed; bottom: 20px; right: 20px; width: 44px; height: 44px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--border); cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-size: 20px; z-index: 100; display: flex; align-items: center; justify-content: center; }
 
-        .item-info { margin-bottom: 12px; }
-        .item-name { display: block; font-weight: 700; font-size: 16px; color: var(--primary); }
-        .item-code { font-size: 12px; color: #64748b; }
+        .progress-bar { height: 6px; background: var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: 0.6s; }
+        .local-badge { background: var(--bg); color: var(--text-sub); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid var(--border); text-transform: uppercase; }
 
-        .grid-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .input-group label {
-            display: block;
-            font-size: 11px;
-            font-weight: 600;
-            color: #64748b;
-            margin-bottom: 4px;
-            text-transform: uppercase;
-        }
-
-        .input-group input { padding: 10px; border-radius: 8px; }
-
-        .full-width { grid-column: span 2; }
-
-        /* Botão de Sincronizar Fixo */
-        .footer-action {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 15px;
-            background: linear-gradient(transparent, var(--bg) 20%);
-            display: flex;
-            justify-content: center;
-        }
-
-        .btn-sync {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 16px 40px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 16px;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-            width: 90%;
-            max-width: 400px;
-        }
-
-        /* Animação simples de loading */
-        .syncing { opacity: 0.7; pointer-events: none; }
-
-        .escondido { display: none; }
+        /* Tabela Otimizada para Celular (Atualizada com campo de observação) */
+        table { width: 100%; border-collapse: collapse; }
+        .linha-contagem { display: flex; flex-wrap: wrap; padding: 15px 0; border-bottom: 1px solid var(--border); align-items: flex-end; }
+        .linha-contagem td { border: none; padding: 5px; box-sizing: border-box; }
+        .linha-contagem td:first-child { width: 100%; font-size: 16px; padding-bottom: 10px; } /* Produto */
+        .linha-contagem td:nth-child(2) { width: 33%; } /* Bom */
+        .linha-contagem td:nth-child(3) { width: 33%; } /* Avaria */
+        .linha-contagem td:nth-child(4) { width: 34%; } /* Validade */
+        .linha-contagem td:last-child { width: 100%; padding-top: 5px; } /* Observações (Ocupa a linha inteira) */
+        
+        input[type="text"][inputmode="numeric"] { text-align: center; font-weight: bold; font-size: 16px; }
+        
+        /* Sticky Button para Sincronização */
+        .sticky-footer { position: sticky; bottom: 0; background: var(--card-bg); padding: 10px 0; margin-top: auto; border-top: 1px solid var(--border); }
     </style>
 </head>
 <body>
 
-<div id="login-area" class="container">
-    <div style="text-align: center; margin-top: 50px;">
-        <h2 style="font-size: 28px;">📦 Contagem de Estoque - Torres</h2>
-        <p>Acesse com seu usuário de operador</p>
-    </div>
-    <div style="margin-top: 30px;">
-        <input type="text" id="user" placeholder="Usuário" style="margin-bottom:10px">
-        <input type="password" id="pass" placeholder="Senha">
-        <button onclick="login()" class="btn-sync" style="margin-top:20px; width:100%">Entrar no Sistema</button>
-    </div>
-</div>
+<button class="floating-theme" onclick="document.body.classList.toggle('modo-escuro')">🌓</button>
 
-<div id="app-area" class="escondido">
-    <div class="header">
-        <h1 id="txt-local">Depósito</h1>
-        <p id="txt-op">Operador: --</p>
+<div class="container">
+    <div id="tela-login" style="margin-top: auto; margin-bottom: auto;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <img src="" id="logo-login" class="system-logo escondido">
+            <div id="emoji-login" style="font-size: 50px; margin-bottom: 10px;">📱</div>
+            <h1 style="margin: 0;" class="display-nome-sistema">Estoque Pro</h1>
+            <p style="color: var(--text-sub); font-size: 14px;">Coletor de Dados</p>
+        </div>
+        <div class="card" style="border: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+            <input type="text" id="login-usuario" placeholder="Nome do Operador">
+            <input type="password" id="login-senha" placeholder="Senha">
+            <button class="btn-p" onclick="autenticar()">Acessar Coletor</button>
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="index.html?admin=true" style="font-size: 12px; color: var(--text-sub); text-decoration: none;">Acessar Painel Admin</a>
+        </div>
     </div>
 
-    <div class="container">
-        <div class="search-box">
-            <input type="text" id="busca" placeholder="🔍 Buscar produto ou EAN..." onkeyup="filtrar()">
+    <div id="tela-contagem" class="escondido" style="flex: 1; display: flex; flex-direction: column;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+            <div>
+                <h2 id="display-operador" style="margin: 0 0 5px 0; font-size: 20px;"></h2>
+                <span class="local-badge" id="display-local"></span>
+            </div>
+            <button class="btn-s" style="min-height: 35px; padding: 5px 15px; width: auto; margin-top: 0;" onclick="sair()">Sair</button>
+        </div>
+        
+        <div class="progress-bar"><div id="barra-progresso-fill" class="progress-fill"></div></div>
+        
+        <div class="card" style="padding: 10px; border-style: dashed; margin-bottom: 10px;">
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="add-manual-nome" placeholder="Produto não listado..." style="margin:0; min-height: 44px; border:none; background:transparent">
+                <button class="btn-p" style="margin:0; width: 50px; min-height: 44px;" onclick="adicionarItemManual()">+</button>
+            </div>
         </div>
 
-        <div id="lista-produtos">
-            </div>
-    </div>
-
-    <div class="footer-action">
-        <button id="btnSalvar" class="btn-sync" onclick="enviarDados()">Finalizar e Enviar</button>
+        <input type="text" id="busca-contagem" placeholder="🔍 Buscar item na lista..." onkeyup="pesquisarProduto()" style="margin-bottom: 10px;">
+        
+        <div style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 20px;">
+            <table style="display: block;">
+                <tbody id="lista-contagem" style="display: block; width: 100%;"></tbody>
+            </table>
+        </div>
+        
+        <div class="sticky-footer">
+            <button class="btn-p" onclick="salvarContagem()">Salvar e Sincronizar Agora</button>
+        </div>
     </div>
 </div>
 
@@ -168,7 +121,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
 <script>
-    // MESMA CONFIGURAÇÃO DO SEU PROJETO
+    // --- REGISTRO PWA ---
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
+    }
+
+    // --- CONFIGURAÇÃO FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyBVjkIBX8ZVQASMdyUXH4TKGnREpi-Etwo",
         authDomain: "estoque-boca-do-acre.firebaseapp.com",
@@ -181,114 +139,160 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let produtos = [], localUser = "", nomeUser = "";
+    let usuarios = {}, opAtual = "", localAtual = "", produtosNoSetor = [];
 
-    function login() {
-        const u = document.getElementById('user').value.trim();
-        const s = document.getElementById('pass').value;
+    // --- IDENTIDADE VISUAL ---
+    db.ref('configuracoes').on('value', snap => {
+        const cfg = snap.val() || { nome: "Estoque Pro", primary: "#0f172a", bg: "#f1f5f9" };
+        document.querySelectorAll('.display-nome-sistema').forEach(el => el.innerText = cfg.nome);
+        document.getElementById('page-title').innerText = cfg.nome + " | Coletor";
+        document.documentElement.style.setProperty('--primary', cfg.primary);
+        document.documentElement.style.setProperty('--bg', cfg.bg);
+        if(cfg.logo) { 
+            document.getElementById('logo-login').src = cfg.logo; 
+            document.getElementById('logo-login').classList.remove('escondido'); 
+            document.getElementById('emoji-login').classList.add('escondido'); 
+        }
+    });
 
-        db.ref('usuarios').once('value', snap => {
-            const users = snap.val();
-            let encontrou = false;
-            for(let k in users) {
-                if(users[k].nome === u && users[k].senha === s) {
-                    nomeUser = u;
-                    localUser = users[k].local;
-                    encontrou = true;
-                    break;
-                }
-            }
+    // --- CARREGAR USUÁRIOS ---
+    db.ref('usuarios').on('value', snap => { usuarios = snap.val() || {}; });
 
-            if(encontrou) {
-                document.getElementById('login-area').classList.add('escondido');
-                document.getElementById('app-area').classList.remove('escondido');
-                document.getElementById('txt-local').innerText = localUser;
-                document.getElementById('txt-op').innerText = "Operador: " + nomeUser;
-                carregarProdutos();
-            } else {
-                alert("Usuário ou senha incorretos.");
-            }
-        });
+    // --- AUTENTICAÇÃO ---
+    function autenticar() {
+        const u = document.getElementById('login-usuario').value.trim();
+        const s = document.getElementById('login-senha').value;
+        
+        let userKey = Object.keys(usuarios).find(key => usuarios[key].nome === u && usuarios[key].senha === s);
+        
+        if(userKey) { 
+            opAtual = u; 
+            localAtual = usuarios[userKey].local; 
+            
+            document.getElementById('display-operador').innerText = opAtual; 
+            document.getElementById('display-local').innerText = localAtual; 
+            
+            // Busca o inventário do setor do operador
+            db.ref('setores/' + localAtual).once('value', snap => { 
+                produtosNoSetor = snap.val() || []; 
+                renderContagem(); 
+                mostrarTela('tela-contagem'); 
+            }); 
+        } else {
+            alert("Operador não encontrado ou senha incorreta.");
+        }
     }
 
-    function carregarProdutos() {
-        db.ref('setores/' + localUser).on('value', snap => {
-            produtos = snap.val() || [];
-            renderizar();
-        });
+    // --- RENDERIZAR LISTA NO CELULAR (Atualizado com Observação) ---
+    function renderContagem() {
+        const corpo = document.getElementById('lista-contagem');
+        if(produtosNoSetor.length === 0) {
+            corpo.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-sub);">Nenhum produto cadastrado neste setor. Adicione manualmente acima.</div>`;
+            return;
+        }
+
+        corpo.innerHTML = produtosNoSetor.map((p, i) => `
+            <tr class="linha-contagem">
+                <td>
+                    <strong>${p.nome}</strong><br>
+                    <small style="color: var(--text-sub);">${p.codigo}</small>
+                </td>
+                <td>
+                    <label style="font-size:10px; color:var(--text-sub);">BOM</label>
+                    <input type="text" inputmode="numeric" value="${p.quantidade||''}" oninput="atuS(${i},'quantidade',this.value)" placeholder="0">
+                </td>
+                <td>
+                    <label style="font-size:10px; color:var(--text-sub);">AVARIA</label>
+                    <input type="text" inputmode="numeric" value="${p.avarias||''}" oninput="atuS(${i},'avarias',this.value)" placeholder="0" style="border-color:var(--danger)">
+                </td>
+                <td>
+                    <label style="font-size:10px; color:var(--text-sub);">VALIDADE</label>
+                    <input type="date" value="${p.validade||''}" oninput="atuS(${i},'validade',this.value); checkDataInput(this, this.value)" style="font-size:12px; padding:12px 5px;">
+                </td>
+                <td>
+                    <input type="text" value="${p.obs||''}" oninput="atuS(${i},'obs',this.value)" placeholder="Observações (opcional)..." style="min-height:38px; font-size:13px; margin-top:0;">
+                </td>
+            </tr>`).join('');
+        atuProgresso();
     }
 
-    function renderizar() {
-        const container = document.getElementById('lista-produtos');
-        container.innerHTML = produtos.map((p, i) => `
-            <div class="item-card" data-nome="${p.nome.toLowerCase()}" data-cod="${p.codigo}">
-                <div class="item-info">
-                    <span class="item-name">${p.nome}</span>
-                    <span class="item-code">EAN: ${p.codigo}</span>
-                </div>
-                <div class="grid-inputs">
-                    <div class="input-group">
-                        <label>Estoque Bom</label>
-                        <input type="number" value="${p.quantidade||''}" oninput="update(${i}, 'quantidade', this.value)" placeholder="0">
-                    </div>
-                    <div class="input-group">
-                        <label>Avaria</label>
-                        <input type="number" value="${p.avarias||''}" oninput="update(${i}, 'avarias', this.value)" placeholder="0" style="color:var(--danger)">
-                    </div>
-                    <div class="input-group full-width">
-                        <label>Data de Validade</label>
-                        <input type="date" value="${p.validade||''}" onchange="update(${i}, 'validade', this.value)">
-                    </div>
-                    <div class="input-group full-width">
-                        <label>Observação</label>
-                        <input type="text" value="${p.obs||''}" oninput="update(${i}, 'obs', this.value)" placeholder="Ex: Lote A2...">
-                    </div>
-                </div>
-            </div>
-        `).join('');
+    // --- LÓGICA DE DADOS ---
+    function atuS(i, campo, valor) { 
+        produtosNoSetor[i][campo] = valor; 
+        atuProgresso(); 
+    }
+    
+    function atuProgresso() { 
+        const contados = produtosNoSetor.filter(p => (parseFloat(p.quantidade) > 0 || parseFloat(p.avarias) > 0 || p.validade || p.obs)).length; 
+        document.getElementById('barra-progresso-fill').style.width = (produtosNoSetor.length > 0 ? (contados / produtosNoSetor.length * 100) : 0) + '%'; 
     }
 
-    function update(index, campo, valor) {
-        produtos[index][campo] = valor;
-        // Opcional: Salvar no Firebase em tempo real para não perder nada
-        db.ref('setores/' + localUser + '/' + index).update({ [campo]: valor });
+    function checkDataInput(inputElement, dataStr) { 
+        if(!dataStr) return inputElement.style.background = ""; 
+        const dv = new Date(dataStr + 'T00:00:00'); 
+        const hoje = new Date();
+        const trintaDias = new Date(); trintaDias.setDate(hoje.getDate() + 30);
+        
+        inputElement.style.background = dv < hoje ? "#fee2e2" : (dv <= trintaDias ? "#fef3c7" : ""); 
     }
 
-    function filtrar() {
-        const termo = document.getElementById('busca').value.toLowerCase();
-        const cards = document.querySelectorAll('.item-card');
-        cards.forEach(card => {
-            const match = card.dataset.nome.includes(termo) || card.dataset.cod.includes(termo);
-            card.style.display = match ? 'block' : 'none';
-        });
+    function adicionarItemManual() { 
+        const n = document.getElementById('add-manual-nome').value.trim(); 
+        if(n) { 
+            produtosNoSetor.unshift({ codigo: "EXTRA", nome: n.toUpperCase(), quantidade: 0, avarias: 0, validade: "", obs: "" }); 
+            renderContagem(); 
+            document.getElementById('add-manual-nome').value = ""; 
+        } 
+    }
+    
+    function pesquisarProduto() { 
+        const termo = document.getElementById('busca-contagem').value.toLowerCase(); 
+        document.querySelectorAll('.linha-contagem').forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(termo) ? 'flex' : 'none';
+        }); 
     }
 
-    async function enviarDados() {
-        const btn = document.getElementById('btnSalvar');
-        btn.innerText = "Sincronizando...";
-        btn.classList.add('syncing');
+    // --- SALVAR E SINCRONIZAR ---
+    async function salvarContagem() {
+        if(!localAtual) return;
+        
+        const btn = document.querySelector('.sticky-footer button');
+        const textoOriginal = btn.innerText;
+        btn.innerText = "Sincronizando... ⏳";
+        btn.disabled = true;
 
         try {
-            // Salva o estado final
-            await db.ref('setores/' + localUser).set(produtos);
+            // Salva o setor inteiro (com o que tá zerado e o que tá contado)
+            await db.ref('setores/' + localAtual).set(produtosNoSetor);
             
-            // Gera o log para o seu painel ADM
-            const contados = produtos.filter(p => (p.quantidade > 0 || p.avarias > 0 || p.validade));
-            if(contados.length > 0) {
-                await db.ref('historico').push({
-                    data: new Date().toLocaleString('pt-BR'),
-                    operador: nomeUser,
-                    local: localUser,
-                    itens: contados
-                });
+            // Filtra só o que foi alterado para jogar no histórico do painel ADM (incluindo observação)
+            const itensContados = produtosNoSetor.filter(p => (parseFloat(p.quantidade) > 0 || parseFloat(p.avarias) > 0 || p.validade || p.obs));
+            
+            if(itensContados.length > 0) {
+                const log = { data: new Date().toLocaleString('pt-BR'), operador: opAtual, local: localAtual, itens: itensContados };
+                await db.ref('historico').push(log);
             }
             
-            alert("✅ Tudo salvo! O gerente já recebeu as atualizações.");
-        } catch (e) {
-            alert("Erro ao enviar. Verifique sua internet.");
+            alert("✅ Dados enviados com sucesso!");
+        } catch (e) { 
+            alert("⚠️ Erro na sincronização. Verifique sua internet."); 
         } finally {
-            btn.innerText = "Finalizar e Enviar";
-            btn.classList.remove('syncing');
+            btn.innerText = textoOriginal;
+            btn.disabled = false;
+        }
+    }
+
+    // --- UTILITÁRIOS ---
+    function mostrarTela(id) { 
+        document.getElementById('tela-login').classList.add('escondido');
+        document.getElementById('tela-contagem').classList.add('escondido');
+        document.getElementById(id).classList.remove('escondido'); 
+    }
+
+    function sair() { 
+        if(confirm("Deseja sair da sessão atual?")) {
+            mostrarTela('tela-login'); 
+            document.getElementById('login-senha').value = '';
         }
     }
 </script>
