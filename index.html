@@ -184,19 +184,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
 <script>
-    // --- 1. REDIRECIONAMENTO INTELIGENTE (ADICIONADO) ---
-    (function detectarDispositivo() {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('admin') === 'true') return; // Se usar ?admin=true não redireciona
-
-        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-        // Detecta se é celular (Android/iPhone/iPad)
-        if (/android/i.test(userAgent) || (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream)) {
-            window.location.href = 'coletor.html';
-        }
-    })();
-
-    // --- 2. CONFIGURAÇÃO FIREBASE ---
+    // --- 1. CONFIGURAÇÃO FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyBVjkIBX8ZVQASMdyUXH4TKGnREpi-Etwo",
         authDomain: "estoque-boca-do-acre.firebaseapp.com",
@@ -211,7 +199,7 @@
 
     let usuarios = {}, depositos = {}, produtosAdmin = [];
 
-    // --- LISTENERS E FUNÇÕES ADMIN ---
+    // --- LISTENERS ---
     db.ref('configuracoes').on('value', snap => {
         const cfg = snap.val() || { nome: "Estoque Pro", primary: "#0f172a", bg: "#f1f5f9" };
         document.querySelectorAll('.display-nome-sistema').forEach(el => el.innerText = cfg.nome);
@@ -221,7 +209,6 @@
         document.getElementById('cfg-nome-sistema').value = cfg.nome;
         document.getElementById('cfg-cor-primaria').value = cfg.primary;
         document.getElementById('cfg-cor-fundo').value = cfg.bg;
-        if(cfg.logo) { document.getElementById('logo-login').src = cfg.logo; document.getElementById('logo-login').classList.remove('escondido'); document.getElementById('emoji-login').classList.add('escondido'); }
     });
 
     db.ref('usuarios').on('value', snap => { usuarios = snap.val() || {}; renderizarUsuarios(); });
@@ -231,14 +218,60 @@
     function autenticar() {
         const u = document.getElementById('login-usuario').value.trim();
         const s = document.getElementById('login-senha').value;
-        if(u.toLowerCase()==='admin' && s==='1234') {
-            mostrarTela('tela-admin');
-        } else {
-            alert("Acesso exclusivo para administradores neste painel.");
+        if(u.toLowerCase()==='admin' && s==='1234') { mostrarTela('tela-admin'); } else { alert("Acesso exclusivo para administradores."); }
+    }
+
+    // --- CORREÇÃO: TABELA E DIGITAÇÃO ---
+    function atualizarTabelaAdmin() {
+        const l = document.getElementById('ver-local-itens').value; if(!l) return;
+        db.ref('setores/' + l).once('value', snap => {
+            produtosAdmin = snap.val() || [];
+            document.getElementById('lista-admin-corpo').innerHTML = produtosAdmin.map((p, i) => `
+                <tr>
+                    <td><strong>${p.nome}</strong><br><small>${p.codigo} | Qtd: ${p.quantidade || 0}</small></td>
+                    <td style="text-align:right">
+                        <button class="btn-s" style="padding:4px 8px" onclick="ajustarEstoqueDireto(${i})">🔢 Qtd</button>
+                        <button class="btn-excluir" style="color:var(--accent)" onclick="editarItemAdm(${i})">✏️</button>
+                        <button class="btn-excluir" onclick="excluirItemAdm(${i})">✕</button>
+                    </td>
+                </tr>`).join('');
+        });
+    }
+
+    function ajustarEstoqueDireto(index) {
+        const l = document.getElementById('ver-local-itens').value;
+        const novaQtd = prompt(`Nova quantidade para ${produtosAdmin[index].nome}:`, produtosAdmin[index].quantidade);
+        if (novaQtd !== null) {
+            produtosAdmin[index].quantidade = parseInt(novaQtd) || 0;
+            db.ref('setores/' + l).set(produtosAdmin).then(() => atualizarTabelaAdmin());
         }
     }
 
-    // --- FUNÇÕES DE INTERFACE ---
+    // --- CORREÇÃO: IMPORTAÇÃO CSV ---
+    function importarCSV() {
+        const fileInput = document.getElementById('input-csv');
+        const local = document.getElementById('ver-local-itens').value;
+        if (!local || !fileInput.files[0]) return alert("Selecione um depósito e o arquivo CSV.");
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const texto = e.target.result;
+            const linhas = texto.split('\n');
+            const novosItens = [];
+            for (let i = 1; i < linhas.length; i++) {
+                const colunas = linhas[i].split(';');
+                if (colunas.length >= 2) {
+                    novosItens.push({ codigo: colunas[0].trim() || "AVULSO", nome: colunas[1].trim().toUpperCase(), quantidade: 0, avarias: 0, validade: "", obs: "" });
+                }
+            }
+            if (novosItens.length > 0) {
+                db.ref('setores/' + local).set(novosItens).then(() => { alert("Sucesso!"); atualizarTabelaAdmin(); });
+            }
+        };
+        reader.readAsText(fileInput.files[0], 'UTF-8');
+    }
+
+    // --- FUNÇÕES RESTANTES ---
     function mudarAba(t) { 
         ['config', 'depositos', 'alertas', 'usuarios', 'hist', 'sistema'].forEach(a => document.getElementById('aba-'+a).classList.add('escondido'));
         document.getElementById('aba-'+t).classList.remove('escondido');
@@ -246,29 +279,16 @@
         document.getElementById('tab-'+(t==='config'?'lista':t)).classList.add('ativa');
         if(t === 'alertas') renderizarAlertas();
     }
-
     function mostrarTela(id) { 
         document.querySelectorAll('[id^="tela-"]').forEach(t => t.classList.add('escondido')); 
         document.getElementById(id).classList.remove('escondido'); 
     }
-
     function sair() { mostrarTela('tela-login'); }
-
-    // --- GESTÃO DE DADOS ---
     function atualizarDropdownsDepositos() {
         const h = Object.keys(depositos).map(k => `<option value="${depositos[k].nome}">${depositos[k].nome}</option>`).join('');
         document.querySelectorAll('.select-depositos-global').forEach(s => s.innerHTML = h || '<option>Crie um depósito</option>');
         atualizarTabelaAdmin();
     }
-
-    function atualizarTabelaAdmin() {
-        const l = document.getElementById('ver-local-itens').value; if(!l) return;
-        db.ref('setores/' + l).once('value', snap => {
-            produtosAdmin = snap.val() || [];
-            document.getElementById('lista-admin-corpo').innerHTML = produtosAdmin.map((p, i) => `<tr><td><strong>${p.nome}</strong><br><small>${p.codigo}</small></td><td style="text-align:right"><button class="btn-excluir" style="color:var(--accent)" onclick="editarItemAdm(${i})">✏️</button><button class="btn-excluir" onclick="excluirItemAdm(${i})">✕</button></td></tr>`).join('');
-        });
-    }
-
     function adicionarItemAdm() {
         const l = document.getElementById('ver-local-itens').value, n = document.getElementById('adm-novo-nome').value.trim(), c = document.getElementById('adm-novo-cod').value.trim();
         if(l && n) db.ref('setores/' + l).once('value', snap => {
@@ -276,82 +296,25 @@
             db.ref('setores/' + l).set(list).then(() => { document.getElementById('adm-novo-nome').value = ""; document.getElementById('adm-novo-cod').value = ""; atualizarTabelaAdmin(); });
         });
     }
-
     function editarItemAdm(i) {
         const l = document.getElementById('ver-local-itens').value;
         const n = prompt("Novo nome:", produtosAdmin[i].nome);
         if(n) { produtosAdmin[i].nome = n.toUpperCase(); db.ref('setores/' + l).set(produtosAdmin).then(() => atualizarTabelaAdmin()); }
     }
-
-    function excluirItemAdm(i) { if(confirm("Excluir item permanentemente da base?")) { const l = document.getElementById('ver-local-itens').value; produtosAdmin.splice(i, 1); db.ref('setores/' + l).set(produtosAdmin).then(() => atualizarTabelaAdmin()); } }
-
+    function excluirItemAdm(i) { if(confirm("Excluir item?")) { const l = document.getElementById('ver-local-itens').value; produtosAdmin.splice(i, 1); db.ref('setores/' + l).set(produtosAdmin).then(() => atualizarTabelaAdmin()); } }
     function zerarEstoqueSetor() {
         const l = document.getElementById('ver-local-itens').value;
-        if(l && confirm("Isso irá zerar todas as contagens deste depósito. Confirmar?")) {
+        if(l && confirm("Zerar contagens?")) {
             db.ref('setores/' + l).once('value', snap => {
                 const z = (snap.val() || []).map(p => ({ ...p, quantidade: 0, avarias: 0, validade: "", obs: "" }));
                 db.ref('setores/' + l).set(z).then(() => atualizarTabelaAdmin());
             });
         }
     }
-
-    async function limparAlertasCriticos() {
-        if(!confirm("Limpar Qtd/Validade de todos os itens vencidos?")) return;
-        const snap = await db.ref('setores').once('value');
-        const todos = snap.val() || {};
-        const hoje = new Date();
-        const limite = new Date(); limite.setDate(hoje.getDate() + 30);
-
-        for (let s in todos) {
-            if (Array.isArray(todos[s])) {
-                let mod = false;
-                const novos = todos[s].map(p => {
-                    if (p.validade && new Date(p.validade + 'T00:00:00') <= limite) {
-                        mod = true; return { ...p, quantidade: 0, avarias: 0, validade: "", obs: "" };
-                    }
-                    return p;
-                });
-                if (mod) await db.ref('setores/' + s).set(novos);
-            }
-        }
-        alert("Limpeza concluída!"); renderizarAlertas();
-    }
-
-    function exportarConsolidado() {
-        const local = document.getElementById('filtro-local-relatorio').value;
-        db.ref('setores/' + local).once('value', snap => {
-            const itens = snap.val() || [];
-            let csv = "Codigo;Produto;Bom;Avaria;Validade;Observacao\n";
-            itens.forEach(p => { if(p.quantidade>0||p.avarias>0||p.validade) csv += `${p.codigo};${p.nome};${p.quantidade};${p.avarias};${p.validade};${p.obs||''}\n`; });
-            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `Relatorio_${local}.csv`; link.click();
-        });
-    }
-
-    function renderizarLogs(dados) {
-        if(!dados) return;
-        document.getElementById('lista-historico').innerHTML = Object.keys(dados).reverse().map(k => `
-            <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding:12px; margin-bottom:10px">
-                <span style="font-size:12px"><strong>${dados[k].local}</strong><br>${dados[k].data} - ${dados[k].operador}</span>
-                <button class="btn-s" style="margin:0; font-size:11px" onclick="baixarLog('${k}')">CSV</button>
-            </div>`).join('');
-    }
-
-    function baixarLog(key) {
-        db.ref('historico/' + key).once('value', snap => {
-            const d = snap.val();
-            let csv = "Cod Produto;Produto;Qtd;Avaria;Validade;Obs\n";
-            d.itens.forEach(p => csv += `${p.codigo};${p.nome};${p.quantidade};${p.avarias};${p.validade};${p.obs||''}\n`);
-            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `Log_${d.local}.csv`; link.click();
-        });
-    }
-
     function cadastrarDeposito() { const n = document.getElementById('novo-deposito-nome').value.trim(); if(n) db.ref('depositos').push({ nome: n }).then(() => document.getElementById('novo-deposito-nome').value=""); }
     function renderizarDepositos() { document.getElementById('lista-depositos-corpo').innerHTML = Object.keys(depositos).map(k => `<tr><td>${depositos[k].nome}</td><td style="text-align:right"><button class="btn-excluir" onclick="db.ref('depositos/${k}').remove()">✕</button></td></tr>`).join(''); }
     function salvarUsuario() { const n = document.getElementById('novo-user-nome').value, s = document.getElementById('novo-user-senha').value, l = document.getElementById('novo-user-local-select').value; if(n && s && l) db.ref('usuarios').push({ nome: n, senha: s, local: l }); }
     function renderizarUsuarios() { document.getElementById('lista-usuarios-corpo').innerHTML = Object.keys(usuarios).map(k => `<tr><td>${usuarios[k].nome}</td><td>${usuarios[k].local}</td><td style="text-align:right"><button class="btn-excluir" onclick="db.ref('usuarios/${k}').remove()">✕</button></td></tr>`).join(''); }
-    
     function renderizarAlertas() {
         const corpo = document.getElementById('lista-alertas-corpo'); corpo.innerHTML = "";
         db.ref('setores').once('value', snap => {
@@ -366,6 +329,13 @@
                 });
             });
         });
+    }
+    function salvarConfiguracoes() {
+        const nome = document.getElementById('cfg-nome-sistema').value;
+        const logo = document.getElementById('cfg-url-logo').value;
+        const primary = document.getElementById('cfg-cor-primaria').value;
+        const bg = document.getElementById('cfg-cor-fundo').value;
+        db.ref('configuracoes').set({ nome, logo, primary, bg }).then(() => alert("Identidade atualizada!"));
     }
 </script>
 </body>
