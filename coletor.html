@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Coletor Mobile | Estoque</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #3b82f6;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --danger: #ef4444;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding-bottom: 80px; /* Espaço para o botão fixo */
+        }
+
+        /* Header fixo */
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 { margin: 0; font-size: 18px; }
+        .header p { margin: 2px 0 0; font-size: 12px; opacity: 0.8; }
+
+        .container { padding: 15px; }
+
+        /* Busca fixa abaixo do header */
+        .search-box {
+            position: sticky;
+            top: 65px;
+            z-index: 90;
+            background: var(--bg);
+            padding: 10px 0;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px; /* Evita zoom no iPhone */
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        input:focus { border-color: var(--accent); }
+
+        /* Card de Produto */
+        .item-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            border: 1px solid var(--border);
+        }
+
+        .item-info { margin-bottom: 12px; }
+        .item-name { display: block; font-weight: 700; font-size: 16px; color: var(--primary); }
+        .item-code { font-size: 12px; color: #64748b; }
+
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .input-group input { padding: 10px; border-radius: 8px; }
+
+        .full-width { grid-column: span 2; }
+
+        /* Botão de Sincronizar Fixo */
+        .footer-action {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px;
+            background: linear-gradient(transparent, var(--bg) 20%);
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn-sync {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        /* Animação simples de loading */
+        .syncing { opacity: 0.7; pointer-events: none; }
+
+        .escondido { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="login-area" class="container">
+    <div style="text-align: center; margin-top: 50px;">
+        <h2 style="font-size: 28px;">📦 Coletor</h2>
+        <p>Acesse com seu usuário de operador</p>
+    </div>
+    <div style="margin-top: 30px;">
+        <input type="text" id="user" placeholder="Usuário" style="margin-bottom:10px">
+        <input type="password" id="pass" placeholder="Senha">
+        <button onclick="login()" class="btn-sync" style="margin-top:20px; width:100%">Entrar no Sistema</button>
+    </div>
+</div>
+
+<div id="app-area" class="escondido">
+    <div class="header">
+        <h1 id="txt-local">Depósito</h1>
+        <p id="txt-op">Operador: --</p>
+    </div>
+
+    <div class="container">
+        <div class="search-box">
+            <input type="text" id="busca" placeholder="🔍 Buscar produto ou EAN..." onkeyup="filtrar()">
+        </div>
+
+        <div id="lista-produtos">
+            </div>
+    </div>
+
+    <div class="footer-action">
+        <button id="btnSalvar" class="btn-sync" onclick="enviarDados()">Finalizar e Enviar</button>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+<script>
+    // MESMA CONFIGURAÇÃO DO SEU PROJETO
+    const firebaseConfig = {
+        apiKey: "AIzaSyBVjkIBX8ZVQASMdyUXH4TKGnREpi-Etwo",
+        authDomain: "estoque-boca-do-acre.firebaseapp.com",
+        databaseURL: "https://estoque-boca-do-acre-default-rtdb.firebaseio.com",
+        projectId: "estoque-boca-do-acre",
+        storageBucket: "estoque-boca-do-acre.firebasestorage.app",
+        messagingSenderId: "802028789408",
+        appId: "1:802028789408:web:c95287ee70bbfd0fecf3c5"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let produtos = [], localUser = "", nomeUser = "";
+
+    function login() {
+        const u = document.getElementById('user').value.trim();
+        const s = document.getElementById('pass').value;
+
+        db.ref('usuarios').once('value', snap => {
+            const users = snap.val();
+            let encontrou = false;
+            for(let k in users) {
+                if(users[k].nome === u && users[k].senha === s) {
+                    nomeUser = u;
+                    localUser = users[k].local;
+                    encontrou = true;
+                    break;
+                }
+            }
+
+            if(encontrou) {
+                document.getElementById('login-area').classList.add('escondido');
+                document.getElementById('app-area').classList.remove('escondido');
+                document.getElementById('txt-local').innerText = localUser;
+                document.getElementById('txt-op').innerText = "Operador: " + nomeUser;
+                carregarProdutos();
+            } else {
+                alert("Usuário ou senha incorretos.");
+            }
+        });
+    }
+
+    function carregarProdutos() {
+        db.ref('setores/' + localUser).on('value', snap => {
+            produtos = snap.val() || [];
+            renderizar();
+        });
+    }
+
+    function renderizar() {
+        const container = document.getElementById('lista-produtos');
+        container.innerHTML = produtos.map((p, i) => `
+            <div class="item-card" data-nome="${p.nome.toLowerCase()}" data-cod="${p.codigo}">
+                <div class="item-info">
+                    <span class="item-name">${p.nome}</span>
+                    <span class="item-code">EAN: ${p.codigo}</span>
+                </div>
+                <div class="grid-inputs">
+                    <div class="input-group">
+                        <label>Estoque Bom</label>
+                        <input type="number" value="${p.quantidade||''}" oninput="update(${i}, 'quantidade', this.value)" placeholder="0">
+                    </div>
+                    <div class="input-group">
+                        <label>Avaria</label>
+                        <input type="number" value="${p.avarias||''}" oninput="update(${i}, 'avarias', this.value)" placeholder="0" style="color:var(--danger)">
+                    </div>
+                    <div class="input-group full-width">
+                        <label>Data de Validade</label>
+                        <input type="date" value="${p.validade||''}" onchange="update(${i}, 'validade', this.value)">
+                    </div>
+                    <div class="input-group full-width">
+                        <label>Observação</label>
+                        <input type="text" value="${p.obs||''}" oninput="update(${i}, 'obs', this.value)" placeholder="Ex: Lote A2...">
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function update(index, campo, valor) {
+        produtos[index][campo] = valor;
+        // Opcional: Salvar no Firebase em tempo real para não perder nada
+        db.ref('setores/' + localUser + '/' + index).update({ [campo]: valor });
+    }
+
+    function filtrar() {
+        const termo = document.getElementById('busca').value.toLowerCase();
+        const cards = document.querySelectorAll('.item-card');
+        cards.forEach(card => {
+            const match = card.dataset.nome.includes(termo) || card.dataset.cod.includes(termo);
+            card.style.display = match ? 'block' : 'none';
+        });
+    }
+
+    async function enviarDados() {
+        const btn = document.getElementById('btnSalvar');
+        btn.innerText = "Sincronizando...";
+        btn.classList.add('syncing');
+
+        try {
+            // Salva o estado final
+            await db.ref('setores/' + localUser).set(produtos);
+            
+            // Gera o log para o seu painel ADM
+            const contados = produtos.filter(p => (p.quantidade > 0 || p.avarias > 0 || p.validade));
+            if(contados.length > 0) {
+                await db.ref('historico').push({
+                    data: new Date().toLocaleString('pt-BR'),
+                    operador: nomeUser,
+                    local: localUser,
+                    itens: contados
+                });
+            }
+            
+            alert("✅ Tudo salvo! O gerente já recebeu as atualizações.");
+        } catch (e) {
+            alert("Erro ao enviar. Verifique sua internet.");
+        } finally {
+            btn.innerText = "Finalizar e Enviar";
+            btn.classList.remove('syncing');
+        }
+    }
+</script>
+</body>
+</html>
