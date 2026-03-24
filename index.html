@@ -277,7 +277,7 @@
     // --- OPERAÇÃO ---
     function autenticar() {
         const u = document.getElementById('login-usuario').value.trim(), s = document.getElementById('login-senha').value;
-        if(u.toLowerCase()==='admin' && s==='1234') return mostrarTela('tela-admin');
+        if(u.toLowerCase()==='admin' && s==='@Revendatorres26') return mostrarTela('tela-admin');
         let k = Object.keys(usuarios).find(k => usuarios[k].nome === u && usuarios[k].senha === s);
         if(k) { opAtual = u; localAtual = usuarios[k].local; document.getElementById('display-operador').innerText = opAtual; document.getElementById('display-local').innerText = localAtual; db.ref('setores/' + localAtual).once('value', snap => { produtosNoSetor = snap.val() || []; renderContagem(); mostrarTela('tela-contagem'); }); }
         else alert("Acesso negado.");
