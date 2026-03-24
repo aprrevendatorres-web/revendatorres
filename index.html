@@ -543,8 +543,8 @@
 
     function baixarLog(key) {
         db.ref('historico/' + key).once('value', snap => {
-            const d = snap.val(); let csv = "Produto;Bom;Avaria;Validade;Obs\n";
-            d.itens.forEach(p => csv += `${p.nome};${p.quantidade};${p.avarias};${p.validade};${p.obs||''}\n`);
+            const d = snap.val(); let csv = "Produto;quantidade;Avaria;Validade;Obs\n";
+            d.itens.forEach(p => csv += `${p.codigo};${p.nome};${p.quantidade};${p.avarias};${p.validade};${p.obs||''}\n`);
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `Log_${d.local}.csv`; link.click();
         });
