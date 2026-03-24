@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title id="page-title">Sistema de Gestão</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" id="status-bar-color" content="#0f172a">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #0f172a; 
+            --primary-hover: #334155; 
+            --bg: #f1f5f9;
+            --card-bg: #ffffff; 
+            --text-main: #1e293b; 
+            --text-sub: #64748b;
+            --border: #e2e8f0; 
+            --danger: #ef4444; 
+            --success: #10b981; 
+            --accent: #3b82f6;
+        }
+        body.modo-escuro {
+            --bg: #020617; --card-bg: #0f172a; --text-main: #f8fafc;
+            --text-sub: #94a3b8; --border: #1e293b;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 20px; transition: all 0.3s ease; -webkit-tap-highlight-color: transparent; }
+        .container { background-color: var(--card-bg); padding: 40px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); width: 100%; max-width: 1000px; margin: 0 auto; }
+        .escondido { display: none; }
+        h1, h2, h3 { font-weight: 700; letter-spacing: -0.025em; margin-bottom: 20px; }
+        input, select { width: 100%; padding: 12px 16px; margin-top: 8px; border: 1px solid var(--border); border-radius: 10px; background-color: var(--card-bg); color: var(--text-main); font-size: 14px; outline: none; transition: 0.2s; min-height: 44px; }
+        button { font-weight: 600; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; transition: all 0.2s; margin-top: 10px; min-height: 44px; }
+        .btn-p { background-color: var(--primary); color: white; }
+        .btn-s { background-color: transparent; color: var(--text-sub); border: 1px solid var(--border); }
+        .btn-danger { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-ok { background-color: var(--accent); color: white; }
+        .tab-nav { display: flex; gap: 4px; margin-bottom: 30px; background: var(--bg); padding: 6px; border-radius: 12px; overflow-x: auto; }
+        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 8px; font-size: 13px; color: var(--text-sub); font-weight: 500; white-space: nowrap; }
+        .tab.ativa { background: var(--card-bg); color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card { border: 1px solid var(--border); padding: 20px; border-radius: 16px; margin-bottom: 20px; background: var(--card-bg); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { text-align: left; padding: 12px; color: var(--text-sub); font-size: 12px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 16px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        .system-logo { max-width: 80px; margin-bottom: 10px; border-radius: 12px; }
+        .floating-theme { position: fixed; top: 25px; right: 25px; width: 44px; height: 44px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; z-index: 100; }
+        .color-preview { width: 100%; height: 40px; border-radius: 8px; border: 1px solid var(--border); margin-top: 5px; cursor: pointer; padding: 0; }
+        .progress-bar { height: 4px; background: var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 25px; }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: 0.6s; }
+        .local-badge { background: var(--bg); color: var(--text-sub); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid var(--border); }
+        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+        .bg-vencido { background: #fee2e2; color: #991b1b; }
+        .bg-proximo { background: #fef3c7; color: #92400e; }
+    </style>
+</head>
+<body>
+
+<button class="floating-theme" onclick="document.body.classList.toggle('modo-escuro')">🌓</button>
+
+<div class="container">
+    <div id="tela-login">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <img src="" id="logo-login" class="system-logo escondido">
+            <div id="emoji-login" style="font-size: 40px; margin-bottom: 10px;">📦</div>
+            <h1 style="margin: 0;" class="display-nome-sistema">Estoque Pro</h1>
+            <p style="color: var(--text-sub); font-size: 14px;">Gestão de Inventário e Validades</p>
+        </div>
+        <div class="card" style="max-width: 400px; margin: 0 auto; border: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+            <input type="text" id="login-usuario" placeholder="Operador">
+            <input type="password" id="login-senha" placeholder="Senha">
+            <button class="btn-p" style="width: 100%;" onclick="autenticar()">Entrar</button>
+        </div>
+    </div>
+
+    <div id="tela-admin" class="escondido">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h2 style="margin:0" class="display-nome-sistema">Painel Gestor</h2>
+            <button class="btn-s" style="padding: 8px 16px; margin: 0;" onclick="sair()">Sair</button>
+        </div>
+
+        <div class="tab-nav">
+            <div id="tab-lista" class="tab ativa" onclick="mudarAba('config')">Base de Itens</div>
+            <div id="tab-depositos" class="tab" onclick="mudarAba('depositos')">Depósitos</div>
+            <div id="tab-alertas" class="tab" onclick="mudarAba('alertas')">⚠️ Validades</div>
+            <div id="tab-usuarios" class="tab" onclick="mudarAba('usuarios')">Operadores</div>
+            <div id="tab-historico" class="tab" onclick="mudarAba('hist')">Relatórios</div>
+            <div id="tab-sistema" class="tab" onclick="mudarAba('sistema')">⚙️ Sistema</div>
+        </div>
+
+        <div id="aba-sistema" class="escondido">
+            <div class="card">
+                <h3>Identidade do Aplicativo</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <label style="font-size: 12px; color: var(--text-sub);">Nome do App</label>
+                        <input type="text" id="cfg-nome-sistema">
+                        <label style="font-size: 12px; color: var(--text-sub); margin-top: 15px; display: block;">Link da Logo</label>
+                        <input type="text" id="cfg-url-logo">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: var(--text-sub);">Cor Principal</label>
+                        <input type="color" id="cfg-cor-primaria" class="color-preview">
+                        <label style="font-size: 12px; color: var(--text-sub); margin-top: 15px; display: block;">Cor de Fundo</label>
+                        <input type="color" id="cfg-cor-fundo" class="color-preview">
+                    </div>
+                </div>
+                <button class="btn-p" onclick="salvarConfiguracoes()" style="width: 100%; margin-top: 25px;">Aplicar Identidade</button>
+            </div>
+        </div>
+
+        <div id="aba-config" class="escondido">
+            <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px;">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin:0">Setor Ativo</h3>
+                        <button class="btn-danger" style="margin:0; padding: 6px 12px; font-size: 11px;" onclick="zerarEstoqueSetor()">🗑️ Zerar Contagem</button>
+                    </div>
+                    <select class="select-depositos-global" id="ver-local-itens" onchange="atualizarTabelaAdmin()"></select>
+                    <div style="max-height: 400px; overflow-y: auto; margin-top:15px">
+                        <table><tbody id="lista-admin-corpo"></tbody></table>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Cadastro / CSV</h3>
+                    <input type="text" id="adm-novo-nome" placeholder="Nome do Produto">
+                    <input type="text" id="adm-novo-cod" placeholder="EAN">
+                    <button class="btn-ok" style="width: 100%;" onclick="adicionarItemAdm()">Novo Item</button>
+                    <hr style="border: none; border-top: 1px solid var(--border); margin: 20px 0;">
+                    <input type="file" id="input-csv" accept=".csv" style="font-size: 11px;">
+                    <button class="btn-s" style="width: 100%;" onclick="importarCSV()">Importar CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="aba-depositos" class="escondido">
+            <div class="card">
+                <h3>Novo Depósito</h3>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="novo-deposito-nome" placeholder="Nome">
+                    <button class="btn-p" onclick="cadastrarDeposito()">Salvar</button>
+                </div>
+            </div>
+            <table><tbody id="lista-depositos-corpo"></tbody></table>
+        </div>
+
+        <div id="aba-alertas" class="escondido">
+            <h3>Monitor de Validades</h3>
+            <table><thead><tr><th>Produto</th><th>Setor</th><th>Vencimento</th><th>Status</th></tr></thead><tbody id="lista-alertas-corpo"></tbody></table>
+        </div>
+
+        <div id="aba-usuarios" class="escondido">
+            <div class="card">
+                <h3>Novo Operador</h3>
+                <input type="text" id="novo-user-nome" placeholder="Usuário">
+                <input type="text" id="novo-user-senha" placeholder="Senha">
+                <select class="select-depositos-global" id="novo-user-local-select"></select>
+                <button class="btn-p" style="width: 100%;" onclick="salvarUsuario()">Criar Acesso</button>
+            </div>
+            <table><tbody id="lista-usuarios-corpo"></tbody></table>
+        </div>
+
+        <div id="aba-hist" class="escondido">
+            <div class="card">
+                <h3>Exportação de Dados</h3>
+                <div style="display: flex; gap: 10px;">
+                    <select class="select-depositos-global" id="filtro-local-relatorio"></select>
+                    <button class="btn-ok" onclick="exportarConsolidado()">BAIXAR CSV</button>
+                </div>
+            </div>
+            <h3 style="margin-top:20px">Logs de Sincronização</h3>
+            <div id="lista-historico"></div>
+        </div>
+    </div>
+
+    <div id="tela-contagem" class="escondido">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 id="display-operador" style="margin:0"></h2>
+            <span class="local-badge" id="display-local"></span>
+        </div>
+        <div class="progress-bar"><div id="barra-progresso-fill" class="progress-fill"></div></div>
+        <div class="card" style="padding: 10px; border-style: dashed; margin-bottom: 10px;">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="add-manual-nome" placeholder="Item extra..." style="margin:0; border:none; background:transparent">
+                <button class="btn-p" style="margin:0; width: 44px;" onclick="adicionarItemManual()">+</button>
+            </div>
+        </div>
+        <input type="text" id="busca-contagem" placeholder="🔍 Buscar na lista..." onkeyup="pesquisarProduto()">
+        <div style="max-height: 55vh; overflow-y: auto;">
+            <table><tbody id="lista-contagem"></tbody></table>
+        </div>
+        <button class="btn-p" style="width: 100%; margin-top: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.1);" onclick="salvarContagem()">Salvar e Sincronizar</button>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+<script>
+    // --- REGISTRO DO SERVICE WORKER PARA PWA ---
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
+    }
+
+    // --- CONFIGURAÇÃO FIREBASE ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyBVjkIBX8ZVQASMdyUXH4TKGnREpi-Etwo",
+        authDomain: "estoque-boca-do-acre.firebaseapp.com",
+        databaseURL: "https://estoque-boca-do-acre-default-rtdb.firebaseio.com",
+        projectId: "estoque-boca-do-acre",
+        storageBucket: "estoque-boca-do-acre.firebasestorage.app",
+        messagingSenderId: "802028789408",
+        appId: "1:802028789408:web:c95287ee70bbfd0fecf3c5"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let usuarios = {}, depositos = {}, opAtual = "", localAtual = "", produtosNoSetor = [], produtosAdmin = [];
+
+    // --- CONFIGURAÇÕES VISUAIS ---
+    db.ref('configuracoes').on('value', snap => {
+        const cfg = snap.val() || { nome: "Estoque Pro", primary: "#0f172a", bg: "#f1f5f9" };
+        document.querySelectorAll('.display-nome-sistema').forEach(el => el.innerText = cfg.nome);
+        document.getElementById('page-title').innerText = cfg.nome;
+        document.documentElement.style.setProperty('--primary', cfg.primary);
+        document.documentElement.style.setProperty('--bg', cfg.bg);
+        document.getElementById('cfg-nome-sistema').value = cfg.nome;
+        document.getElementById('cfg-cor-primaria').value = cfg.primary;
+        document.getElementById('cfg-cor-fundo').value = cfg.bg;
+        if(cfg.logo) { document.getElementById('logo-login').src = cfg.logo; document.getElementById('logo-login').classList.remove('escondido'); document.getElementById('emoji-login').classList.add('escondido'); }
+    });
+
+    // --- LISTENERS ---
+    db.ref('usuarios').on('value', snap => { usuarios = snap.val() || {}; renderizarUsuarios(); });
+    db.ref('depositos').on('value', snap => { depositos = snap.val() || {}; atualizarDropdownsDepositos(); renderizarDepositos(); });
+    db.ref('historico').on('value', snap => { renderizarLogs(snap.val()); });
+
+    // --- CORREÇÃO: SALVAR E SINCRONIZAR ---
+    async function salvarContagem() {
+        if(!localAtual) return;
+        try {
+            await db.ref('setores/' + localAtual).set(produtosNoSetor);
+            const itensContados = produtosNoSetor.filter(p => (parseFloat(p.quantidade) > 0 || parseFloat(p.avarias) > 0 || p.validade));
+            
+            if(itensContados.length > 0) {
+                const log = { data: new Date().toLocaleString('pt-BR'), operador: opAtual, local: localAtual, itens: itensContados };
+                await db.ref('historico').push(log);
+            }
+            alert("✅ Sincronizado com sucesso!");
+        } catch (e) { alert("Erro na sincronização."); }
+    }
+
+    // --- CORREÇÃO: EXPORTAÇÃO CSV ---
+    function downloadCSV(csv, filename) {
+        const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+    }
+
+    async function exportarConsolidado() {
+        const local = document.getElementById('filtro-local-relatorio').value;
+        if(!local) return;
+        db.ref('setores/' + local).once('value', snap => {
+            const itens = snap.val();
+            if(!itens) return;
+            let csv = "Codigo;Produto;Bom;Avaria;Validade;Local\n";
+            itens.forEach(p => {
+                if(parseFloat(p.quantidade) > 0 || parseFloat(p.avarias) > 0)
+                    csv += `${p.codigo || ''};${p.nome};${p.quantidade || 0};${p.avarias || 0};${p.validade || ''};${local}\n`;
+            });
+            downloadCSV(csv, `Inventario_${local}.csv`);
+        });
+    }
+
+    window.baixarLogIndividual = function(key) {
+        db.ref('historico/' + key).once('value', snap => {
+            const d = snap.val();
+            let csv = "Data;Operador;Local;Codigo;Produto;Bom;Avaria;Validade\n";
+            d.itens.forEach(p => {
+                csv += `${d.data};${d.operador};${d.local};${p.codigo || ''};${p.nome};${p.quantidade || 0};${p.avarias || 0};${p.validade || ''}\n`;
+            });
+            downloadCSV(csv, `Log_${d.local}.csv`);
+        });
+    }
+
+    // --- OPERAÇÃO ---
+    function autenticar() {
+        const u = document.getElementById('login-usuario').value.trim(), s = document.getElementById('login-senha').value;
+        if(u.toLowerCase()==='admin' && s==='1234') return mostrarTela('tela-admin');
+        let k = Object.keys(usuarios).find(k => usuarios[k].nome === u && usuarios[k].senha === s);
+        if(k) { opAtual = u; localAtual = usuarios[k].local; document.getElementById('display-operador').innerText = opAtual; document.getElementById('display-local').innerText = localAtual; db.ref('setores/' + localAtual).once('value', snap => { produtosNoSetor = snap.val() || []; renderContagem(); mostrarTela('tela-contagem'); }); }
+        else alert("Acesso negado.");
+    }
+
+    function renderContagem() {
+        document.getElementById('lista-contagem').innerHTML = produtosNoSetor.map((p, i) => `
+            <tr class="linha-contagem">
+                <td><strong>${p.nome}</strong><br><small>${p.codigo}</small></td>
+                <td><input type="number" value="${p.quantidade||''}" oninput="atuS(${i},'quantidade',this.value)" placeholder="0"></td>
+                <td><input type="number" value="${p.avarias||''}" oninput="atuS(${i},'avarias',this.value)" placeholder="Avaria" style="border-color:var(--danger)"></td>
+                <td><input type="date" value="${p.validade||''}" oninput="atuS(${i},'validade',this.value); checkDataInput(this, this.value)" id="val-${i}"></td>
+                <td><button class="btn-excluir" onclick="removerItemManual(${i})">✕</button></td>
+            </tr>`).join('');
+        atuProgresso();
+    }
+
+    // --- AUXILIARES ---
+    function mudarAba(t) { 
+        ['config', 'depositos', 'alertas', 'usuarios', 'hist', 'sistema'].forEach(a => document.getElementById('aba-'+a).classList.add('escondido'));
+        document.getElementById('aba-'+t).classList.remove('escondido');
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('ativa'));
+        document.getElementById('tab-'+(t==='config'?'lista':t)).classList.add('ativa');
+        if(t === 'alertas') renderizarAlertas();
+    }
+    function mostrarTela(id) { document.querySelectorAll('[id^="tela-"]').forEach(t => t.classList.add('escondido')); document.getElementById(id).classList.remove('escondido'); }
+    function sair() { mostrarTela('tela-login'); }
+    function atuS(i, c, v) { produtosNoSetor[i][c] = v; atuProgresso(); }
+    function atuProgresso() { const c = produtosNoSetor.filter(p => (parseFloat(p.quantidade) > 0 || parseFloat(p.avarias) > 0)).length; document.getElementById('barra-progresso-fill').style.width = (produtosNoSetor.length > 0 ? (c / produtosNoSetor.length * 100) : 0) + '%'; }
+    function adicionarItemManual() { const n = document.getElementById('add-manual-nome').value.trim(); if(n) { produtosNoSetor.push({ codigo: "MANUAL", nome: n.toUpperCase(), quantidade: 0, avarias: 0, validade: "" }); renderContagem(); document.getElementById('add-manual-nome').value = ""; } }
+    function removerItemManual(i) { if(confirm("Remover?")) { produtosNoSetor.splice(i, 1); renderContagem(); } }
+    function pesquisarProduto() { const b = document.getElementById('busca-contagem').value.toLowerCase(); document.querySelectorAll('.linha-contagem').forEach(r => r.style.display = r.innerText.toLowerCase().includes(b) ? '' : 'none'); }
+    function checkDataInput(i, d) { if(!d) return i.style.background = ""; const dv = new Date(d + 'T00:00:00'); i.style.background = dv < new Date() ? "#fee2e2" : (dv <= new Date().setDate(new Date().getDate()+30) ? "#fef3c7" : ""); }
+    function cadastrarDeposito() { const n = document.getElementById('novo-deposito-nome').value.trim(); if(n) db.ref('depositos').push({ nome: n }).then(() => document.getElementById('novo-deposito-nome').value = ""); }
+    function renderizarDepositos() { document.getElementById('lista-depositos-corpo').innerHTML = Object.keys(depositos).map(k => `<tr><td>${depositos[k].nome}</td><td style="text-align:right"><button class="btn-excluir" onclick="db.ref('depositos/${k}').remove()">✕</button></td></tr>`).join(''); }
+    function atualizarDropdownsDepositos() {
+        const h = Object.keys(depositos).map(k => `<option value="${depositos[k].nome}">${depositos[k].nome}</option>`).join('');
+        document.querySelectorAll('.select-depositos-global').forEach(s => s.innerHTML = h || '<option>Crie um depósito</option>');
+        atualizarTabelaAdmin();
+    }
+    function atualizarTabelaAdmin() {
+        const l = document.getElementById('ver-local-itens').value; if(!l) return;
+        db.ref('setores/' + l).once('value', snap => {
+            produtosAdmin = snap.val() || [];
+            document.getElementById('lista-admin-corpo').innerHTML = produtosAdmin.map((p, i) => `<tr><td><strong>${p.nome}</strong><br><small>${p.codigo}</small></td><td style="text-align:right"><button class="btn-excluir" style="color:var(--accent)" onclick="editarItemAdm(${i})">✏️</button><button class="btn-excluir" onclick="excluirItemAdm(${i})">✕</button></td></tr>`).join('');
+        });
+    }
+    function adicionarItemAdm() {
+        const l = document.getElementById('ver-local-itens').value, n = document.getElementById('adm-novo-nome').value.trim(), c = document.getElementById('adm-novo-cod').value.trim();
+        if(l && n) db.ref('setores/' + l).once('value', snap => {
+            let list = snap.val() || []; list.push({ codigo: c || "AVULSO", nome: n.toUpperCase(), quantidade: 0, avarias: 0, validade: "" });
+            db.ref('setores/' + l).set(list).then(() => { document.getElementById('adm-novo-nome').value = ""; document.getElementById('adm-novo-cod').value = ""; atualizarTabelaAdmin(); });
+        });
+    }
+    function editarItemAdm(i) {
+        const l = document.getElementById('ver-local-itens').value;
+        const n = prompt("Novo nome:", produtosAdmin[i].nome);
+        if(n) { produtosAdmin[i].nome = n.toUpperCase(); db.ref('setores/' + l).set(produtosAdmin).then(() => atualizarTabelaAdmin()); }
+    }
+    function excluirItemAdm(i) { if(confirm("Excluir?")) { const l = document.getElementById('ver-local-itens').value; produtosAdmin.splice(i, 1); db.ref('setores/' + l).set(produtosAdmin).then(() => atualizarTabelaAdmin()); } }
+    function zerarEstoqueSetor() {
+        const l = document.getElementById('ver-local-itens').value;
+        if(l && confirm("Zerar tudo?")) {
+            db.ref('setores/' + l).once('value', snap => {
+                const z = (snap.val() || []).map(p => ({ ...p, quantidade: 0, avarias: 0, validade: "" }));
+                db.ref('setores/' + l).set(z).then(() => atualizarTabelaAdmin());
+            });
+        }
+    }
+    function salvarConfiguracoes() {
+        const n = document.getElementById('cfg-nome-sistema').value.trim(), l = document.getElementById('cfg-url-logo').value.trim(), p = document.getElementById('cfg-cor-primaria').value, b = document.getElementById('cfg-cor-fundo').value;
+        db.ref('configuracoes').set({ nome: n, logo: l, primary: p, bg: b }).then(() => alert("Salvo!"));
+    }
+    function importarCSV() {
+        const l = document.getElementById('ver-local-itens').value; const f = document.getElementById('input-csv').files[0];
+        if(!l || !f) return;
+        const r = new FileReader(); r.onload = async (e) => {
+            const linhas = e.target.result.split(/\r?\n/); let novos = [];
+            linhas.forEach(lin => { const c = lin.split(/[;,]/); if(c.length >= 2 && c[0].toLowerCase() !== "codigo") novos.push({ codigo: c[0].replace(/"/g,'').trim(), nome: c[1].replace(/"/g,'').trim(), quantidade: 0, avarias: 0, validade: "" }); });
+            await db.ref('setores/' + l).set(novos); atualizarTabelaAdmin();
+        }; r.readAsText(f, 'UTF-8');
+    }
+    function renderizarLogs(dados) {
+        if(!dados) return;
+        document.getElementById('lista-historico').innerHTML = Object.keys(dados).reverse().map(k => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding:12px; margin-bottom:10px">
+                <span style="font-size:12px"><strong>${dados[k].local}</strong><br>${dados[k].data} - ${dados[k].operador}</span>
+                <button class="btn-s" style="margin:0; font-size:11px" onclick="baixarLogIndividual('${k}')">CSV</button>
+            </div>`).join('');
+    }
+    function salvarUsuario() { const n = document.getElementById('novo-user-nome').value, s = document.getElementById('novo-user-senha').value, l = document.getElementById('novo-user-local-select').value; if(n && s && l) db.ref('usuarios').push({ nome: n, senha: s, local: l }); }
+    function renderizarUsuarios() { document.getElementById('lista-usuarios-corpo').innerHTML = Object.keys(usuarios).map(k => `<tr><td>${usuarios[k].nome}</td><td>${usuarios[k].local}</td><td style="text-align:right"><button class="btn-excluir" onclick="db.ref('usuarios/${k}').remove()">✕</button></td></tr>`).join(''); }
+    function renderizarAlertas() {
+        const corpo = document.getElementById('lista-alertas-corpo'); corpo.innerHTML = "";
+        db.ref('setores').once('value', snap => {
+            const setores = snap.val() || {};
+            Object.keys(setores).forEach(s => {
+                if(Array.isArray(setores[s])) setores[s].forEach(p => {
+                    if(p.validade && (parseFloat(p.quantidade) > 0 || parseFloat(p.avarias) > 0)) {
+                        const dv = new Date(p.validade + 'T00:00:00');
+                        let b = dv < new Date() ? '<span class="status-badge bg-vencido">VENCIDO</span>' : (dv <= new Date().setDate(new Date().getDate()+30) ? '<span class="status-badge bg-proximo">PRÓXIMO</span>' : '');
+                        if(b) corpo.innerHTML += `<tr><td>${p.nome}</td><td><span class="local-badge">${s}</span></td><td>${dv.toLocaleDateString('pt-BR')}</td><td>${b}</td></tr>`;
+                    }
+                });
+            });
+        });
+    }
+</script>
+</body>
+</html>

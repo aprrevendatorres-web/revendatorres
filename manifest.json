@@ -1,0 +1,17 @@
+{
+  "name": "Estoque Pro",
+  "short_name": "EstoquePro",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0f172a",
+  "description": "Sistema Inteligente de Gestão de Inventário",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2897/2897785.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
